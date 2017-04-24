@@ -1,0 +1,15 @@
+---
+- name: Run salt checks
+  shell: "{{ item }}"
+  args:
+    executable: /bin/bash
+  register: salt_check_result
+  with_items:
+    - /usr/bin/salt-key -A --yes
+    - /usr/bin/salt-key -L
+    - '{{ salt_cmd }} "*" saltutil.refresh_pillar'
+    - '{{ salt_cmd }} "*" test.ping'
+- debug:
+    var: item
+  with_items:
+    - "{{ salt_check_result.results }}"

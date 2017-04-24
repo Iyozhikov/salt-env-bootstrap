@@ -1,0 +1,127 @@
+---
+- name: Install required packages
+  apt:
+    name: '{{ required_packages | list }}'
+    state: latest
+    update_cache: yes
+- name: Download Ubuntu image
+  get_url:
+    url: "{{ cloud_image_url }}"
+    dest: "{{ cloud_image_path }}"
+  register: uimage_download_results
+- debug:
+    var: uimage_download_results
+- name: Iterate over invenrory 1
+  debug:
+    msg: "{{ hostvars[item]['eth0_mac'] }}"
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Shutdown VMs
+  virt:
+    name: "{{ item }}"
+    state: destroyed
+  ignore_errors: yes
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Undefine VMs
+  virt:
+    name: "{{ item }}"
+    command: undefine
+  ignore_errors: yes
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Prepare VM disks
+  command: cp {{ cloud_image_path }} {{ hostvars[item]['vm_storage'] }}{{ item }}.qcow2
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Resize VM disks to ~60Gb
+  command: qemu-img resize {{ hostvars[item]['vm_storage'] }}{{ item }}.qcow2 +{{ vm_disk_gb }}GB
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Remove old sshkey
+  file:
+    dest: ~/.ssh/root_vm_id_rsa
+    state: absent
+- name: Prepare config drive ssh key
+  command: ssh-keygen -t rsa -f {{ remote_ssh_root_key }} -q -P ""
+- name: Read key contents into variable
+  command: cat {{ remote_ssh_root_key }}.pub
+  register: root_vm_hostkey
+- name: Clean directories for config drives
+  file:
+    dest: "/tmp/cdrives/"
+    state: absent
+- name: Create directories for config drives 1
+  file:
+    dest: "/tmp/cdrives/{{ item }}/openstack/2012-08-10"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Create directories for config drives 2
+  file:
+    src: "2012-08-10"
+    dest: "/tmp/cdrives/{{ item }}/openstack/latest"
+    state: link
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- debug:
+    msg: "{{ root_vm_hostkey.stdout }}"
+- name: Place user_data_template to directories
+  template:
+    src: "./templates/user_data.j2"
+    dest: "/tmp/cdrives/{{ item }}/openstack/latest/user_data"
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Place meta_data_template to directories
+  template:
+    src: "./templates/meta_data.json.j2"
+    dest: "/tmp/cdrives/{{ item }}/openstack/latest/meta_data.json"
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Clean old config drives
+  file:
+    dest: /var/lib/libvirt/images/conf_drive_{{ item }}.raw
+    state: absent
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Generate config drives
+  command: virt-make-fs /tmp/cdrives/{{ item }} /var/lib/libvirt/images/conf_drive_{{ item }}.raw
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Label config drives
+  command: e2label /var/lib/libvirt/images/conf_drive_{{ item }}.raw config-2
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Define VMs
+  virt:
+    name: "{{ item }}"
+    command: define
+    xml: "{{ lookup('template', 'templates/vm.xml.j2') }}"
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Set autostart for VMs
+  command: virsh autostart {{ item }}
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"
+- name: Start VMs
+  virt:
+    name: "{{ item }}"
+    state: running
+  with_items:
+    - "{{ groups['master'] }}"
+    - "{{ groups['workers'] }}"

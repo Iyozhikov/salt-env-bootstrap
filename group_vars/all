@@ -1,0 +1,44 @@
+---
+# global vars
+remote_ssh_root_key: '~/.ssh/root_vm_id_rsa'
+cloud_image_url: 'https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img'
+cloud_image_path: '/var/lib/libvirt/images/ubuntu-1604.qcow2'
+libvirt_net_name: 'default'
+#is_virt: True
+vm_default_domain: 'virthost.local'
+vm_per_host: 6
+vm_machine: "pc"
+vm_vcpu: 2
+vm_ram_kb: 4194304
+vm_disk_gb: 58
+vm_username: user
+vm_userpass: P@ssw0rd
+required_packages:
+  - libguestfs-tools
+
+# SALT
+salt_required_packages:
+  - cookiecutter
+  - git
+  - python-cookiecutter
+  - python-jinja2
+  - python-pip
+  - python-setuptools
+  - util-linux
+salt_type: 'stable'
+salt_version: '2016.11.3'
+salt_bootstrap_url: 'https://bootstrap.saltstack.com'
+salt_bootstrap_path: '~/salt-bootstrap'
+# MK/MCP
+vip_interface: 'ens3'
+control_address: '192.168.122.254'
+mk_required_deb_packages:
+  - python-cookiecutter
+  - python-jinja2
+  - python-pip
+  - python-setuptools
+  - cookiecutter
+  - util-linux
+salt_cmd: '/usr/bin/salt --state-output=mixed'
+ns_server1: '192.168.122.1'
+reclass_path: '/srv/salt/reclass'

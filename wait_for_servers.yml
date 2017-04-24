@@ -1,0 +1,14 @@
+- name: Waiting while VMs will be available over ssh
+  wait_for:
+    host: "{{ ansible_ssh_host | default(inventory_hostname) }}"
+    port: 22
+    delay: 30
+    timeout: 900
+    search_regex: OpenSSH
+  connection: local
+- name: Wait for cloud-init finished
+  raw: grep -q "finish{{ ":" }} modules-final{{ ":" }} SUCCESS" /var/log/cloud-init.log
+  register: grep_result
+  until: grep_result.rc == 0
+  retries: 20
+  delay: 60

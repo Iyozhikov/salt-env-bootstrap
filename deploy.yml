@@ -1,0 +1,24 @@
+---
+- hosts: virthost
+  tasks:
+    - name: Run VMs privision
+      include: ./prepare-vms.yml
+      when: is_virt is defined
+- hosts: remote
+  gather_facts: no
+  tasks:
+    - name: Wait for VMs after reboot with cloud-init
+      include: ./wait_for_servers.yml
+      when: is_virt is defined
+- hosts: master
+  tasks:
+    - name: Run install of Salt master
+      include: ./preparesalt-master.yml
+- hosts: workers
+  tasks:
+    - name: Run install of Salt minions
+      include: ./preparesalt-minions.yml
+- hosts: master
+  tasks:
+    - name: Run initial commands on Salt master
+      include: ./run-salt-on-master.yml

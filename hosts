@@ -1,0 +1,28 @@
+[virthost]
+virthost ansible_host=loclahost ansible_connection=local
+
+[remote:vars]
+ansible_ssh_private_key_file={{ remote_ssh_root_key }}
+
+[remote:children]
+master
+workers
+
+[master]
+a-master ansible_host=192.168.122.160 eth0_mac="52:54:00:78:b1:14" vm_storage="/var/lib/libvirt/images/"
+
+[workers]
+a-worker1 ansible_host=192.168.122.202 eth0_mac="52:54:00:f2:5e:88" vm_storage="/var/lib/libvirt/images/"
+a-worker2 ansible_host=192.168.122.163 eth0_mac="52:54:00:bc:c1:ef" vm_storage="/var/lib/libvirt/images/"
+a-worker3 ansible_host=192.168.122.2 eth0_mac="52:54:00:14:1f:90" vm_storage="/var/lib/libvirt/images/"
+a-worker4 ansible_host=192.168.122.237 eth0_mac="52:54:00:a8:1b:fc" vm_storage="/var/lib/libvirt/images/"
+a-worker5 ansible_host=192.168.122.102 eth0_mac="52:54:00:86:c3:40" vm_storage="/var/lib/libvirt/images/"
+
+[kubernetes_control_nodes]
+a-worker1
+a-worker2
+a-worker3
+
+[kubernetes_worker_nodes]
+a-worker4
+a-worker5

@@ -1,0 +1,35 @@
+#cloud-config
+fqdn: {{ item }}.{{ vm_default_domain }}
+users:
+  - default
+  - name: root
+    plain_text_passwd: {{ vm_userpass }}
+    lock_passwd: false
+    ssh-authorized-keys:
+      - {{ root_vm_hostkey.stdout }}
+  - name: {{ vm_username }}
+    plain_text_passwd: {{ vm_userpass }}
+    lock_passwd: false
+    groups: users, sudo, adm
+    ssh-authorized-keys:
+      - {{ root_vm_hostkey.stdout }}
+swap:
+  filename: /swap.img
+  size: "auto" # or size in bytes
+  maxsize: {{ vm_ram_kb * 1024 }}
+
+package_upgrade: true
+packages:
+  - python
+  - python-pip
+  - python-setuptools
+  - atop
+  - mc
+  - git
+  - wget
+
+power_state:
+  mode: reboot
+  message: Bye Bye
+  timeout: 30
+  condition: True

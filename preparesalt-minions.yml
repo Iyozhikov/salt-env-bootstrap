@@ -1,0 +1,35 @@
+---
+- name: Install packages
+  apt:
+    name: '{{ salt_required_packages | list }}'
+    state: latest
+    update_cache: yes
+- name: Clean salt-bootstrap directory
+  file:
+    dest: "{{ salt_bootstrap_path }}"
+    state: absent
+- name: Create salt-bootstrap directory
+  file:
+    dest: "{{ salt_bootstrap_path }}"
+    state: directory
+    mode: 0755
+- name: Create /srv/salt directory
+  file:
+    dest: /srv/salt
+    state: directory
+    mode: 0755
+- name: Download salt-bootstrap script
+  get_url:
+    url: "{{ salt_bootstrap_url }}"
+    dest: "{{ salt_bootstrap_path }}/bootstrap-salt.sh"
+    mode: 0755
+- name: Run salt-bootstrap script - salt-minion
+  shell: >
+    ./bootstrap-salt.sh -n -U \
+    -A {{ hostvars[groups['master'][0]].ansible_default_ipv4.address }} \
+    {{ salt_type }} {{ salt_version }}
+  args:
+    chdir: "{{ salt_bootstrap_path }}"
+    executable: /bin/bash
+- debug:
+    var: run_bootstrap_results
